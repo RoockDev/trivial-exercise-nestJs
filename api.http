@@ -1,0 +1,16 @@
+### Obtener una pregunta aleatoria
+GET http://localhost:3000/trivial/random
+
+
+### Responder a una pregunta
+POST http://localhost:3000/trivial/answer
+Content-Type: application/json
+
+{
+    "id": 2,
+    "option": 2
+}
+
+### Obtener puntuacion
+GET  http://localhost:3000/trivial/score
+
