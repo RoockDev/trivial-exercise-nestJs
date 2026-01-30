@@ -1,0 +1,15 @@
+
+services:
+  mongo:
+    image: mongo:7.0  
+    container_name: trivial-mongo
+    restart: always
+    ports:
+      - "27018:27017" 
+    environment:
+      MONGO_INITDB_DATABASE: trivial-game 
+    volumes:
+      - mongo-data:/data/db
+
+volumes:
+  mongo-data:
