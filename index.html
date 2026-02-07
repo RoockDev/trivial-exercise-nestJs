@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NestJS Trivial Profesional</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #f4f4f4; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .hidden { display: none; } /* Clase para ocultar cosas */
+        
+        input { display: block; width: 100%; padding: 10px; margin-bottom: 10px; box-sizing: border-box; }
+        button { padding: 10px 20px; cursor: pointer; border: none; border-radius: 4px; font-weight: bold; }
+        .btn-primary { background: #007bff; color: white; width: 100%; }
+        .btn-option { background: #e2e6ea; display: block; width: 100%; margin: 5px 0; text-align: left; }
+        .btn-option:hover { background: #dbeaff; }
+        .btn-danger { background: #dc3545; color: white; }
+        
+        #score-display { font-size: 1.5em; color: #28a745; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <h1>🧠 Trivial NestJS</h1>
+
+    <div id="login-screen" class="card">
+        <h2>🔑 Identifícate</h2>
+        <input type="email" id="email" placeholder="Email" value="palpatine@darth.com">
+        <input type="password" id="password" placeholder="Contraseña" value="palpatine">
+        
+        <button class="btn-primary" onclick="login()">Entrar</button>
+        
+        <div style="margin-top: 15px; text-align: center;">
+            <p style="margin-bottom: 5px; color: #666;">¿No tienes cuenta?</p>
+            <button class="btn-option" onclick="showScreen('register-screen')">📝 Regístrate aquí</button>
+        </div>
+    </div>
+
+    <div id="register-screen" class="card hidden">
+        <h2>👋 Nuevo Usuario</h2>
+        <p>Crea tu cuenta para empezar a jugar</p>
+        <input type="text" id="reg-name" placeholder="Tu Nombre">
+        <input type="email" id="reg-email" placeholder="Tu Email">
+        <input type="password" id="reg-pass" placeholder="Tu Contraseña">
+        
+        <button class="btn-primary" style="background:#28a745;" onclick="register()">✨ Crear Cuenta y Jugar</button>
+        
+        <button class="btn-danger" style="margin-top:10px; background:#6c757d;" onclick="showScreen('login-screen')">
+            🔙 Volver al Login
+        </button>
+    </div>
+
+    <div id="game-screen" class="card hidden">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span>Hola, <b id="username-display">Usuario</b></span>
+            <button class="btn-danger" onclick="logout()">Salir</button>
+        </div>
+        <hr>
+        
+        <div style="text-align: center; margin: 20px 0;">
+            <h3>Puntos Actuales</h3>
+            <div id="score-display">0</div>
+        </div>
+
+        <div id="controls">
+            <button id="btn-start" class="btn-primary" onclick="startGame()">▶️ INICIAR PARTIDA</button>
+            <button id="btn-ranking" class="btn-option" style="background:#ffc107; color:black; margin-top:10px;" onclick="loadRanking()">🏆 VER RANKING</button>
+            <button id="btn-end" class="btn-danger hidden" onclick="endGame()">🏁 TERMINAR Y GUARDAR</button>
+        </div>
+
+        
+
+
+    </div>
+
+    <div id="ranking-container" class="hidden">
+            <h3>🏆 Ranking Global (Estadísticas)</h3>
+            <table border="1" style="width:100%; text-align:center; border-collapse: collapse; background:white;">
+                <thead style="background:#333; color:white;">
+                    <tr>
+                        <th>#</th>
+                        <th>Jugador</th> <th>Puntos Totales</th></tr>
+                </thead>
+                <tbody id="ranking-body">
+                    </tbody>
+            </table>
+            <button onclick="closeRanking()" style="margin-top:10px;">Cerrar Ranking</button>
+        </div>
+
+    <div id="question-container" class="card hidden">
+        <h3 id="question-text">Cargando pregunta...</h3>
+        <div id="options-area">
+            </div>
+        <p id="feedback-msg" style="font-weight: bold; text-align: center;"></p>
+        <button id="btn-next" class="btn-primary hidden" onclick="loadQuestion()">Siguiente Pregunta ➡️</button>
+    </div>
+
+    <script>
+        // VARIABLES GLOBALES (El estado del Frontend)
+        const API_URL = 'http://localhost:3000';
+        let token = null;       // Aquí guardaremos el JWT
+        let gameId = null;      // Aquí guardaremos el ID de la partida activa
+        let currentQuestionId = null; // EL DATO CLAVE: ID de la pregunta actual
+
+        // --- AQUÍ EMPEZAREMOS A PROGRAMAR EN EL SIGUIENTE PASO ---
+        console.log("Frontend cargado y listo.");
+        // -----------------------------------------
+        // 1. GESTIÓN DE PANTALLAS (UI)
+        // -----------------------------------------
+        // -----------------------------------------
+        // 1. GESTIÓN DE PANTALLAS (UI) - ARREGLADA
+        // -----------------------------------------
+        function showScreen(screenName) {
+            // Lista de TODAS las pantallas posibles
+            const screens = [
+                'login-screen', 
+                'register-screen', // <--- AÑADIDO: Para que se oculte bien
+                'game-screen', 
+                'question-container', 
+                'ranking-container'
+            ];
+
+            // 1. Ocultamos TODAS
+            screens.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.classList.add('hidden');
+            });
+            
+            // 2. Mostramos SOLO la que queremos
+            const target = document.getElementById(screenName);
+            if (target) target.classList.remove('hidden');
+        }
+
+        // -----------------------------------------
+        // 2. AUTENTICACIÓN (Conectar con NestJS)
+        // -----------------------------------------
+       // -----------------------------------------
+        // NUEVA FUNCIÓN: REGISTRO
+        // -----------------------------------------
+        async function register() {
+            const name = document.getElementById('reg-name').value;
+            const email = document.getElementById('reg-email').value;
+            const password = document.getElementById('reg-pass').value;
+
+            if(!name || !email || !password) {
+                alert("⚠️ Por favor, rellena todos los campos.");
+                return;
+            }
+
+            try {
+                // 1. PETICIÓN DE REGISTRO
+                const res = await fetch(`${API_URL}/auth/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, email, password })
+                });
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    alert("❌ Error: " + (data.message || "No se pudo crear el usuario"));
+                    return;
+                }
+
+                // 2. AUTO-LOGIN (La magia ✨)
+                // Escenario A: Tu backend YA devuelve el token al registrar
+                if (data.access_token || (data.data && data.data.access_token)) {
+                    token = data.access_token || data.data.access_token;
+                    // Preparamos la interfaz
+                    document.getElementById('username-display').innerText = email;
+                    document.getElementById('email').value = email; // Guardamos para la próxima
+                    
+                    alert("✅ Cuenta creada. ¡Vamos a jugar!");
+                    showScreen('game-screen'); // <--- DIRECTO AL JUEGO
+                } 
+                
+                // Limpiamos formulario de registro
+                document.getElementById('reg-name').value = "";
+                document.getElementById('reg-email').value = "";
+                document.getElementById('reg-pass').value = "";
+
+            } catch (error) {
+                console.error(error);
+                alert("❌ Error de conexión.");
+            }
+        }
+
+        
+
+        // -----------------------------------------
+        // ACTUALIZACIÓN: LOGIN CON ALERT
+        // -----------------------------------------
+        async function login() {
+            const emailInput = document.getElementById('email').value;
+            const passwordInput = document.getElementById('password').value;
+            // Ya no usamos el texto rojo, usamos alert
+
+            if(!emailInput || !passwordInput) {
+                alert("Introduce email y contraseña");
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: emailInput, password: passwordInput })
+                });
+
+                const data = await res.json();
+
+                if (res.ok) {
+                    // ÉXITO
+                    token = data.data ? data.data.access_token : data.access_token;
+                    document.getElementById('username-display').innerText = emailInput;
+                    
+                    // Mostramos la pantalla de juego
+                    showScreen('game-screen');
+                } else {
+                    // ERROR (Credenciales malas)
+                    alert("❌ Acceso denegado: " + (data.message || 'Credenciales incorrectas'));
+                }
+            } catch (error) {
+                console.error(error);
+                alert("❌ El servidor no responde.");
+            }
+        }
+
+        function logout() {
+            token = null;
+            gameId = null;
+            location.reload(); // Recargamos la página para limpiar todo
+        }
+
+        // -----------------------------------------
+        // 3. LÓGICA DEL JUEGO (START & PREGUNTAS)
+        // -----------------------------------------
+        
+        // A) EMPEZAR PARTIDA
+        async function startGame() {
+            try {
+                // 1. Pedimos al servidor crear una partida nueva
+                const res = await fetch(`${API_URL}/game/start`, {
+                    method: 'POST',
+                    headers: { 
+                        'Authorization': `Bearer ${token}` // ¡Importante enviar el Token!
+                    }
+                });
+                
+                const data = await res.json();
+
+                if (res.ok) {
+                    // 2. Guardamos el ID de la partida (Vital para luego responder)
+                    gameId = data.data.gameId; // Ojo: Si tu interceptor mete todo en 'data', usa data.data.gameId. Si no, data.gameId
+                    console.log("Partida iniciada ID:", gameId);
+
+                    // 3. Preparamos la interfaz
+                    document.getElementById('btn-start').classList.add('hidden'); // Ocultar botón Start
+                    document.getElementById('btn-end').classList.remove('hidden'); // Mostrar botón Terminar
+                    document.getElementById('question-container').classList.remove('hidden'); // Mostrar zona de preguntas
+                    
+                    // 4. Cargamos la primera pregunta
+                    loadQuestion();
+                } else {
+                    alert("Error al iniciar: " + JSON.stringify(data));
+                }
+            } catch (error) {
+                console.error(error);
+                alert("Error de conexión al iniciar partida");
+            }
+        }
+
+        // B) PEDIR PREGUNTA (El Ping)
+        async function loadQuestion() {
+            const questionText = document.getElementById('question-text');
+            const optionsArea = document.getElementById('options-area');
+            const feedbackMsg = document.getElementById('feedback-msg');
+            const btnNext = document.getElementById('btn-next');
+
+            // Limpiamos la pantalla anterior
+            questionText.innerText = "Cargando...";
+            optionsArea.innerHTML = "";
+            feedbackMsg.innerText = "";
+            btnNext.classList.add('hidden');
+
+            try {
+                // Llamamos a tu endpoint de preguntas random
+                const res = await fetch(`${API_URL}/trivial/random`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                const responseData = await res.json();
+                
+                // AJUSTE DE INTERCEPTOR:
+                // Si tu servidor devuelve { data: { _id:..., question:... } } usa responseData.data
+                // Si devuelve directo el objeto, usa responseData.
+                // Asumo que usas interceptor:
+                const question = responseData.data || responseData; 
+
+                if (res.ok && question) {
+                    // GUARDAMOS EL ID (El secreto para el Pong)
+                    currentQuestionId = question._id; 
+
+                    // Pintamos la pregunta
+                    questionText.innerText = question.question;
+
+                    // Pintamos las opciones (recorremos el array)
+                    question.options.forEach((opcionTexto, index) => {
+                        const btn = document.createElement('button');
+                        btn.className = 'btn-option';
+                        btn.innerText = opcionTexto;
+                        
+                        // Al hacer clic, respondemos
+                        btn.onclick = () => submitAnswer(index); 
+                        
+                        optionsArea.appendChild(btn);
+                    });
+
+                } else {
+                    questionText.innerText = "No hay más preguntas o error.";
+                }
+            } catch (error) {
+                console.error(error);
+                questionText.innerText = "Error al cargar pregunta.";
+            }
+        }
+
+        // -----------------------------------------
+        // 4. RESPONDER Y TERMINAR (El final del ciclo)
+        // -----------------------------------------
+
+        async function submitAnswer(answerIndex) {
+            const feedbackMsg = document.getElementById('feedback-msg');
+            const scoreDisplay = document.getElementById('score-display');
+            const btnNext = document.getElementById('btn-next');
+            const optionsArea = document.getElementById('options-area');
+
+            // 1. Desactivar botones para evitar "doble click" o trampas
+            const allButtons = optionsArea.querySelectorAll('button');
+            allButtons.forEach(btn => btn.disabled = true);
+
+            try {
+                // 2. ENVIAR RESPUESTA AL BACKEND (El Pong 🏓)
+                const res = await fetch(`${API_URL}/game/answer`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        gameId: gameId,              // La partida actual
+                        questionId: currentQuestionId, // La pregunta que estás viendo
+                        answerOption: answerIndex    // Lo que has clicado
+                    })
+                });
+
+                const dataWrapper = await res.json(); 
+                // EXTRAEMOS LOS DATOS (Compatible con tu Interceptor)
+                // Si el back devuelve { data: { ... } }, cogemos dataWrapper.data
+                const result = dataWrapper.data || dataWrapper; 
+
+                if (res.ok) {
+                    // 3. ACTUALIZAR PUNTUACIÓN EN PANTALLA
+                    // Usamos 'totalPoints' (según tu código del back)
+                    if (result.totalPoints !== undefined) {
+                        scoreDisplay.innerText = result.totalPoints;
+                    }
+
+                    // 4. FEEDBACK VISUAL
+                    if (result.correct || result.points > 0) { 
+                        feedbackMsg.innerText = `¡CORRECTO! +${result.points} Puntos 🎉`;
+                        feedbackMsg.style.color = "green";
+                        // Marcamos el botón pulsado en verde (opcional, visual)
+                        allButtons[answerIndex].style.background = "#28a745"; 
+                        allButtons[answerIndex].style.color = "white"; 
+                    } else {
+                        feedbackMsg.innerText = "¡FALLASTE! 😢";
+                        feedbackMsg.style.color = "red";
+                        allButtons[answerIndex].style.background = "#dc3545"; // Rojo al fallar
+                        allButtons[answerIndex].style.color = "white"; 
+                    }
+
+                    // 5. Mostrar botón para ir a la siguiente
+                    btnNext.classList.remove('hidden');
+
+                } else {
+                    feedbackMsg.innerText = "Error: " + (dataWrapper.message || "Algo falló en el server");
+                }
+
+            } catch (error) {
+                console.error(error);
+                feedbackMsg.innerText = "Error de conexión con el servidor.";
+            }
+        }
+
+        async function endGame() {
+             if(!confirm("¿Seguro que quieres terminar la partida?")) return;
+
+             // 1. Bloqueamos botón para evitar doble clic
+             const btnEnd = document.getElementById('btn-end');
+             btnEnd.disabled = true; 
+             btnEnd.innerText = "Guardando...";
+
+             try {
+                const res = await fetch(`${API_URL}/game/end`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ gameId: gameId })
+                });
+                
+                if (res.ok) {
+                    alert("✅ Partida Guardada Correctamente");
+
+                    // 2. REINICIAMOS VARIABLES (Sin recargar la página)
+                    gameId = null;
+                    currentQuestionId = null;
+
+                    // 3. REINICIAMOS LA INTERFAZ (UI)
+                    // Ocultamos botones de juego
+                    document.getElementById('btn-end').classList.add('hidden');
+                    document.getElementById('question-container').classList.add('hidden');
+                    
+                    // Volvemos a mostrar el botón de Iniciar
+                    const btnStart = document.getElementById('btn-start');
+                    btnStart.classList.remove('hidden');
+                    
+                    // Reseteamos el marcador visual a 0 para la próxima
+                    document.getElementById('score-display').innerText = "0";
+
+                    // 4. (Opcional) Abrimos el Ranking automáticamente para ver el resultado
+                    loadRanking();
+
+                } else {
+                    alert("Error al guardar la partida en el servidor.");
+                }
+
+            } catch (error) {
+                console.error(error);
+                alert("Error de conexión.");
+            } finally {
+                // Pase lo que pase, reactivamos el botón (y le devolvemos su texto original)
+                btnEnd.disabled = false;
+                btnEnd.innerText = "🏁 TERMINAR Y GUARDAR";
+            }
+        }
+        
+        
+        // -----------------------------------------
+        // 5. RANKING / LEADERBOARD (VERSIÓN AGGREGATE)
+        // -----------------------------------------
+
+        async function loadRanking() {
+            const rankingContainer = document.getElementById('ranking-container');
+            const rankingBody = document.getElementById('ranking-body');
+            
+            // Limpiamos la tabla
+            rankingBody.innerHTML = "<tr><td colspan='4'>Calculando estadísticas...</td></tr>";
+            rankingContainer.classList.remove('hidden');
+
+            try {
+                // 1. LLAMAMOS AL NUEVO ENDPOINT
+                const res = await fetch(`${API_URL}/scores/stats`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                const wrapper = await res.json();
+                // Tu interceptor devuelve { data: [...] } o directo [...]
+                const stats = wrapper.data || wrapper; 
+
+                rankingBody.innerHTML = "";
+
+                if (!stats || stats.length === 0) {
+                    rankingBody.innerHTML = "<tr><td colspan='4'>Aún no hay datos registrados.</td></tr>";
+                    return;
+                }
+
+                // 2. PINTAMOS LA TABLA CON TUS DATOS DEL AGGREGATE
+                stats.forEach((stat, index) => {
+                    const fila = document.createElement('tr');
+                    
+                    // Como usaste $project, los datos vienen planos (sin .user.name)
+                    // stat = { name: "Pepe", totalPoints: 50 }
+                    
+                    fila.innerHTML = `
+                        <td>${index + 1}</td>
+                        <td style="font-weight:bold;">${stat.name || 'Anónimo'}</td>
+                        <td style="color:green; font-weight:bold;">${stat.totalPoints}</td>
+                        
+                    `;
+                    rankingBody.appendChild(fila);
+                });
+
+            } catch (error) {
+                console.error(error);
+                rankingBody.innerHTML = "<tr><td colspan='4' style='color:red;'>Error al cargar estadísticas</td></tr>";
+            }
+        }
+            function closeRanking() {
+            document.getElementById('ranking-container').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>

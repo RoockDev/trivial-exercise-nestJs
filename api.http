@@ -3,14 +3,80 @@ GET http://localhost:3000/trivial/random
 
 
 ### Responder a una pregunta
-POST http://localhost:3000/trivial/answer
+POST http://localhost:3000/trivial/check
 Content-Type: application/json
 
 {
-    "id": 2,
+    "id": 1,
     "option": 2
 }
 
 ### Obtener puntuacion
 GET  http://localhost:3000/trivial/score
 
+### Crear un usuario
+POST http://localhost:3000/users
+Content-Type: application/json
+
+{
+  "name": "Pepe Admin",
+  "email": "ppepe@test.com",
+  "password": "1234password",
+  "age": 30,
+  "roles": ["admin"]
+}
+
+### Registrar usuario
+POST http://localhost:3000/auth/register
+Content-Type: application/json
+
+{
+  "name": "Sergio",
+  "email": "sergio@test.com",
+  "password": "123"
+
+}
+
+###Login
+POST http://localhost:3000/auth/login
+Content-Type: application/json
+
+{
+  "email": "pepe@test.com",
+  "password": "1234"
+}
+
+### eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InBlcGVAdGVzdC5jb20iLCJzdWIiOiI2OTdmOTZkMjZlYjAyNzM5ZDY4ZjQ4MDQiLCJyb2xlcyI6WyJhZG1pbiJdLCJpYXQiOjE3Njk5ODMxMjMsImV4cCI6MTc2OTk4NjcyM30.zmmlMcFA_6b-BTS5V6CEOZ1tcX5vJSWm1dafJ7zAWUk
+
+### Crear una pregunta (tiene que ser admin)
+POST http://localhost:3000/trivial
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InBlcGVAdGVzdC5jb20iLCJzdWIiOiI2OTdmOTZkMjZlYjAyNzM5ZDY4ZjQ4MDQiLCJyb2xlcyI6WyJhZG1pbiJdLCJpYXQiOjE3Njk5ODMxMjMsImV4cCI6MTc2OTk4NjcyM30.zmmlMcFA_6b-BTS5V6CEOZ1tcX5vJSWm1dafJ7zAWUk
+
+{
+  "question": "¿Cual es el clero de los mandalorianos?",
+  "options": ["Este es el camino", "Todos a uno como los de fuenteovejuna", "A por todas", "Por harry"],
+  "answer": "Este es el camino",
+  "points": 10
+}
+
+###  Obtener todas las preguntas
+GET http://localhost:3000/trivial
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InBlcGVAdGVzdC5jb20iLCJzdWIiOiI2OTdmOTZkMjZlYjAyNzM5ZDY4ZjQ4MDQiLCJyb2xlcyI6WyJhZG1pbiJdLCJpYXQiOjE3Njk5ODMxMjMsImV4cCI6MTc2OTk4NjcyM30.zmmlMcFA_6b-BTS5V6CEOZ1tcX5vJSWm1dafJ7zAWUk
+
+
+### 697fd7e5b0cfd2c4f9fe4ecf
+
+### Responder pregunta (Comprobar acierto)
+POST http://localhost:3000/trivial/check
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InBlcGVAdGVzdC5jb20iLCJzdWIiOiI2OTdmOTZkMjZlYjAyNzM5ZDY4ZjQ4MDQiLCJyb2xlcyI6WyJhZG1pbiJdLCJpYXQiOjE3Njk5ODY5NDAsImV4cCI6MTc2OTk5MDU0MH0.Rx9qJlCVMwZZIIXfsInS8lywgu0jj5lV2Q12LMKMyoQ
+
+{
+  "id": "697fd7e5b0cfd2c4f9fe4ecf",
+  "option": 2
+}
+
+### Ver Ranking
+GET http://localhost:3000/scores/stats
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InBlcGVAdGVzdC5jb20iLCJzdWIiOiI2OTdmOTZkMjZlYjAyNzM5ZDY4ZjQ4MDQiLCJyb2xlcyI6WyJhZG1pbiJdLCJpYXQiOjE3Njk5ODY5NDAsImV4cCI6MTc2OTk5MDU0MH0.Rx9qJlCVMwZZIIXfsInS8lywgu0jj5lV2Q12LMKMyoQ

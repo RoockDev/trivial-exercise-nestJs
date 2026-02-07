@@ -1,13 +1,11 @@
-import {IsInt, Max, Min } from 'class-validator';
+import { IsString, IsNotEmpty, IsInt, Min } from 'class-validator';
 
 export class CheckAnswerDto {
-   
-    @IsInt()
-    id: number;
+  @IsString()
+  @IsNotEmpty()
+  id: string; 
 
-
-    @IsInt()
-    @Min(1)
-    @Max(4)
-    option: number;
+  @IsInt() 
+  @Min(0)  
+  option: number; 
 }

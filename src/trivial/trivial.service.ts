@@ -1,80 +1,125 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { CreateTrivialDto } from './dto/create-trivial.dto';
 import { UpdateTrivialDto } from './dto/update-trivial.dto';
-import { Trivial } from './entities/trivial.entity';
 import { CheckAnswerDto } from './dto/check.answer.dto';
+import { Trivial } from './entities/trivial.entity';
+import { Model } from 'mongoose';
+import { InjectModel } from '@nestjs/mongoose';
 
 @Injectable()
 export class TrivialService {
 
-  //contador de aciertos
-  private score:number = 0;
+  private score: number = 0;
 
-  private questions: Trivial[] = [
-    {
-      id: 1,
-      question: '¿Cuál es el nombre Sith de Anakin Skywalker?',
-      options: ['Darth Maul', 'Darth Sidious', 'Darth Vader', 'Darth Tyranus'],
-      correctAnswer: 2 
-    },
-    {
-      id: 2,
-      question: '¿En qué planeta creció Anakin Skywalker?',
-      options: ['Naboo', 'Tatooine', 'Coruscant', 'Mustafar'],
-      correctAnswer: 1 
-    },
-    {
-      id: 3,
-      question: '¿Cómo se llama la nave de Han Solo?',
-      options: ['X-Wing', 'Destructor Estelar', 'Halcón Milenario', 'Esclavo I'],
-      correctAnswer: 2
-    },
-    {
-      id: 4,
-      question: '¿Quién es el padre de Luke Skywalker?',
-      options: ['Obi-Wan', 'El Emperador', 'Darth Vader', 'Han Solo'],
-      correctAnswer: 2 
-    },
-    {
-      id: 5,
-      question: '¿De qué color es el sable de luz de Mace Windu?',
-      options: ['Azul', 'Verde', 'Rojo', 'Morado'],
-      correctAnswer: 3 
+  constructor(
+    @InjectModel(Trivial.name)
+    private readonly trivialModel: Model<Trivial>
+  ){}
+
+
+  async create(createTrivialDto: CreateTrivialDto){
+    try {
+      const preguntaInsertada = await this.trivialModel.create(createTrivialDto);
+      return preguntaInsertada;
+    } catch (error) {
+      if (error.code === 11000) {
+        throw new BadRequestException('La pregunta ya existe');
+      }
+      throw new InternalServerErrorException('Error al crear la pregunta');
     }
-  ];
-
-  //devuelve pregunta random
-  findRandom(){
-    const randomIndex = Math.floor(Math.random() * this.questions.length);
-    const selectedQuestion = this.questions[randomIndex];
-
-    // se quita la respuesta para no hacer trampas 
-    const {correctAnswer, ...questionWithoutAnswer} = selectedQuestion;
-
-    return questionWithoutAnswer;
   }
 
-  //devolver si la option es la buena
-  checkAnswer(checkAnswerDto: CheckAnswerDto):boolean{
-    const question = this.questions.find(q => q.id === checkAnswerDto.id);
-    if (!question) {
-      throw new NotFoundException('Pregunta no encontrada');
+  async findAll(){
+    return await this.trivialModel.find();
+  }
+
+  async findOne(id:number){
+    const pregunta = await this.trivialModel.findOne({id});
+    if (!pregunta) {
+      throw new NotFoundException('Pregunta no encontrada')
     }
+    return pregunta;
+  }
 
-    const isCorrect = (checkAnswerDto.option - 1) === question.correctAnswer;
+  async update(id: string, updateTrivialDto: UpdateTrivialDto) {
+    
+    const preguntaActualizada = await this.trivialModel.findOneAndUpdate(
+        { id },
+        updateTrivialDto,
+        { new: true }
+    );
+    if (!preguntaActualizada) throw new NotFoundException(`Pregunta ${id} no encontrada`);
+    return preguntaActualizada;
+  }
 
-    if (isCorrect) {
-      this.score++;
-    }
+  async remove(id:number){
+    const eliminado = await this.trivialModel.findOneAndDelete({id});
+    if (!eliminado) throw new NotFoundException('pregunta no encontrada');
+    return{message: 'pregunta no encontrada'};
+  }
 
-    return isCorrect;
+  async removeAll(){
+    this.score = 0;
+    return await this.trivialModel.deleteMany({})
+  }
+
+  //obtener una pregunta aleatoria
+  async findRandom(){
+    const count = await this.trivialModel.countDocuments();
+
+     if (count === 0) {
+        throw new NotFoundException('No existe ninguna pregunta');
+     }
+
+     const random = Math.floor(Math.random() * count);
+
+     const preguntaRandom = await this.trivialModel.findOne().skip(random);
+
+     return preguntaRandom;
 
   }
 
-  //devolver puntuacion
-  getScore(){
-    return this.score;
+  
+
+
+async checkAnswer(checkAnswerDto: CheckAnswerDto) {
+  
+  const question = await this.trivialModel.findById(checkAnswerDto.id);
+
+  if (!question) {
+    throw new NotFoundException('Pregunta no encontrada');
   }
+
+  
+  if (checkAnswerDto.option >= question.options.length) {
+     throw new BadRequestException('Esa opción no existe en esta pregunta');
+  }
+
+  
+  const selectedText = question.options[checkAnswerDto.option];
+
+  
+  const isCorrect = selectedText === question.answer;
+
+  return {
+    message: isCorrect? 'Has acertado' : 'Has fallado',
+    points: isCorrect ? question.points : 0
+  };
+}
+
+
+  getScore() {
+    return{
+      message: 'Puntuación actual del jugador',
+      score: this.score
+    };
+  }
+
+
+  
+
+  
+
 
 
 }
